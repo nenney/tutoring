@@ -1,0 +1,54 @@
+package com.assignment.tutoring.domain.availability.controller;
+
+import com.assignment.tutoring.domain.availability.dto.AvailabilityRequestDto;
+import com.assignment.tutoring.domain.availability.dto.AvailabilityResponseDto;
+import com.assignment.tutoring.domain.availability.service.AvailabilityService;
+import com.assignment.tutoring.domain.user.dto.UserResponseDto;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/availabilities")
+@RequiredArgsConstructor
+public class AvailabilityController {
+
+    private final AvailabilityService availabilityService;
+
+    // 튜터 API
+    @PostMapping("/tutors/{tutorId}")
+    public ResponseEntity<AvailabilityResponseDto> createAvailability(
+            @PathVariable Long tutorId,
+            @RequestBody AvailabilityRequestDto request) {
+        return ResponseEntity.ok(availabilityService.createAvailability(tutorId, request));
+    }
+
+    @DeleteMapping("/{availabilityId}/tutors/{tutorId}")
+    public ResponseEntity<Void> deleteAvailability(
+            @PathVariable Long availabilityId,
+            @PathVariable Long tutorId) {
+        availabilityService.deleteAvailability(tutorId, availabilityId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // 학생 API
+    @GetMapping("/search")
+    public ResponseEntity<List<AvailabilityResponseDto>> searchAvailableTimeSlots(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam int durationMinutes) {
+        return ResponseEntity.ok(availabilityService.getAvailableTimeSlots(startDate, endDate, durationMinutes));
+    }
+
+    @GetMapping("/tutors/search")
+    public ResponseEntity<List<UserResponseDto>> searchAvailableTutors(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
+            @RequestParam int durationMinutes) {
+        return ResponseEntity.ok(availabilityService.getAvailableTutors(startTime, endTime, durationMinutes));
+    }
+}
