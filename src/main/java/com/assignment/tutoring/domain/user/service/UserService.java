@@ -1,0 +1,64 @@
+package com.assignment.tutoring.domain.user.service;
+
+import com.assignment.tutoring.domain.user.entity.Student;
+import com.assignment.tutoring.domain.user.entity.Tutor;
+import com.assignment.tutoring.domain.user.entity.User;
+import com.assignment.tutoring.domain.user.repository.StudentRepository;
+import com.assignment.tutoring.domain.user.repository.TutorRepository;
+import com.assignment.tutoring.domain.user.dto.UserRequestDto;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.assignment.tutoring.global.error.UserException;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
+public class UserService {
+    private final TutorRepository tutorRepository;
+    private final StudentRepository studentRepository;
+
+    // 튜터 회원가입
+    @Transactional
+    public Tutor tutorSignUp(UserRequestDto request) {
+        // 아이디 중복 체크
+        if (tutorRepository.findByUserId(request.getUserId()).isPresent() || 
+            studentRepository.findByUserId(request.getUserId()).isPresent()) {
+            throw UserException.userIdDuplicated();
+        }
+
+        Tutor tutor = new Tutor(request.getUserId(), request.getPassword(), request.getName());
+        return tutorRepository.save(tutor);
+    }
+
+    // 학생 회원가입
+    @Transactional
+    public Student studentSignUp(UserRequestDto request) {
+        // 아이디 중복 체크
+        if (tutorRepository.findByUserId(request.getUserId()).isPresent() || 
+            studentRepository.findByUserId(request.getUserId()).isPresent()) {
+            throw UserException.userIdDuplicated();
+        }
+
+        Student student = new Student(request.getUserId(), request.getPassword(), request.getName());
+        return studentRepository.save(student);
+    }
+
+    // 로그인
+    public User login(UserRequestDto request) {
+        Optional<User> user = tutorRepository.findByUserId(request.getUserId())
+                .map(tutor -> (User) tutor)
+                .or(() -> studentRepository.findByUserId(request.getUserId())
+                        .map(student -> (User) student));
+
+        User foundUser = user.orElseThrow(UserException::userNotFound);
+
+        if (!foundUser.getPassword().equals(request.getPassword())) {
+            throw UserException.passwordMismatch();
+        }
+
+        return foundUser;
+    }
+}

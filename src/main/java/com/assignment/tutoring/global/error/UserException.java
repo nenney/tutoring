@@ -17,4 +17,12 @@ public class UserException extends BusinessException {
     public static UserException invalidUserRole() {
         return new UserException(ErrorCode.USER_ROLE_INVALID);
     }
+
+    public static UserException userIdDuplicated() {
+        return new UserException(ErrorCode.USER_ID_DUPLICATED);
+    }
+
+    public static UserException passwordMismatch() {
+        return new UserException(ErrorCode.PASSWORD_MISMATCH);
+    }
 }
