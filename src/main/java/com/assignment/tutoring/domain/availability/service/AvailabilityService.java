@@ -77,7 +77,7 @@ public class AvailabilityService {
         }
 
         List<Availability> availabilities = availabilityRepository
-                .findByStartTimeBetweenAndIsAvailableTrue(startDate, endDate);
+                .findByStartTimeBetweenAndAvailableTrue(startDate, endDate);
 
         return availabilities.stream()
                 .filter(availability ->
@@ -102,7 +102,7 @@ public class AvailabilityService {
         }
 
         List<Availability> availabilities = availabilityRepository
-                .findByStartTimeAndEndTimeAndIsAvailableTrue(startTime, endTime);
+                .findByStartTimeAndEndTimeAndAvailableTrue(startTime, endTime);
 
         return availabilities.stream()
                 .map(Availability::getTutor)
@@ -119,7 +119,7 @@ public class AvailabilityService {
             LocalDateTime endTime
     ) {
         List<Availability> availabilities = availabilityRepository
-                .findByTutorIdAndStartTimeBetweenAndIsAvailableTrue(
+                .findByTutorIdAndStartTimeBetweenAndAvailableTrue(
                         tutorId, startTime, endTime);
 
         return availabilities.stream()
