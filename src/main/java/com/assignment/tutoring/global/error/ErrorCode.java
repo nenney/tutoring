@@ -18,6 +18,8 @@ public enum ErrorCode {
     LESSON_DURATION_INVALID(HttpStatus.BAD_REQUEST, "수업 길이가 잘못되었습니다."),
 
     // 수업 가능 시간 관련 에러
+    AVAILABILITY_NOT_FOUND(HttpStatus.NOT_FOUND, "수업 가능 시간을 찾을 수 없습니다."),
+    NOT_TUTOR_AVAILABILITY(HttpStatus.FORBIDDEN, "해당 튜터의 수업 가능 시간이 아닙니다."),
     AVAILABILITY_TIME_INVALID(HttpStatus.BAD_REQUEST, "잘못된 수업 가능 시간입니다."),
     AVAILABILITY_TIME_OVERLAP(HttpStatus.BAD_REQUEST, "이미 등록된 수업 가능 시간입니다."),
     AVAILABILITY_PAST_TIME(HttpStatus.BAD_REQUEST, "과거 시간은 등록할 수 없습니다.");
