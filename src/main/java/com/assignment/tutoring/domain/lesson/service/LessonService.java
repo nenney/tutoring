@@ -4,7 +4,6 @@ import com.assignment.tutoring.domain.availability.entity.AvailabilitySlot;
 import com.assignment.tutoring.domain.availability.repository.AvailabilitySlotRepository;
 import com.assignment.tutoring.domain.lesson.dto.LessonRequestDto;
 import com.assignment.tutoring.domain.lesson.dto.LessonResponseDto;
-import com.assignment.tutoring.domain.lesson.dto.LessonTimeRequestDto;
 import com.assignment.tutoring.domain.lesson.entity.Lesson;
 import com.assignment.tutoring.domain.lesson.entity.LessonType;
 import com.assignment.tutoring.domain.lesson.repository.LessonRepository;
@@ -65,10 +64,10 @@ public class LessonService {
         // 7. 슬롯 상태 업데이트
         slots.forEach(slot -> {
             AvailabilitySlot newSlot = AvailabilitySlot.createWithLesson(
-                slot.getAvailability(),
-                slot.getStartTime(),
-                slot.getEndTime(),
-                lesson
+                    slot.getAvailability(),
+                    slot.getStartTime(),
+                    slot.getEndTime(),
+                    lesson
             );
             availabilitySlotRepository.save(newSlot);
         });

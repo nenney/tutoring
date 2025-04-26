@@ -3,7 +3,9 @@ package com.assignment.tutoring.domain.availability.entity;
 import com.assignment.tutoring.domain.user.entity.Tutor;
 import com.assignment.tutoring.global.common.TimeStamped;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

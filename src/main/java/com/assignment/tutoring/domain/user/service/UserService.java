@@ -1,19 +1,18 @@
 package com.assignment.tutoring.domain.user.service;
 
 import com.assignment.tutoring.domain.user.dto.LoginRequestDto;
+import com.assignment.tutoring.domain.user.dto.UserRequestDto;
 import com.assignment.tutoring.domain.user.entity.Student;
 import com.assignment.tutoring.domain.user.entity.Tutor;
 import com.assignment.tutoring.domain.user.entity.User;
 import com.assignment.tutoring.domain.user.repository.StudentRepository;
 import com.assignment.tutoring.domain.user.repository.TutorRepository;
-import com.assignment.tutoring.domain.user.dto.UserRequestDto;
 import com.assignment.tutoring.global.error.UserException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -28,8 +27,8 @@ public class UserService {
     @Transactional
     public Tutor tutorSignUp(UserRequestDto request) {
         // 아이디 중복 체크
-        if (tutorRepository.findByUserId(request.getUserId()).isPresent() || 
-            studentRepository.findByUserId(request.getUserId()).isPresent()) {
+        if (tutorRepository.findByUserId(request.getUserId()).isPresent() ||
+                studentRepository.findByUserId(request.getUserId()).isPresent()) {
             throw UserException.userIdDuplicated();
         }
 
@@ -42,8 +41,8 @@ public class UserService {
     @Transactional
     public Student studentSignUp(UserRequestDto request) {
         // 아이디 중복 체크
-        if (tutorRepository.findByUserId(request.getUserId()).isPresent() || 
-            studentRepository.findByUserId(request.getUserId()).isPresent()) {
+        if (tutorRepository.findByUserId(request.getUserId()).isPresent() ||
+                studentRepository.findByUserId(request.getUserId()).isPresent()) {
             throw UserException.userIdDuplicated();
         }
 
@@ -73,12 +72,12 @@ public class UserService {
         if (tutor.isPresent()) {
             return tutor.get();
         }
-        
+
         Optional<Student> student = studentRepository.findByUserId(userId);
         if (student.isPresent()) {
             return student.get();
         }
-        
+
         throw UserException.userNotFound();
     }
 }

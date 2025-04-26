@@ -15,14 +15,14 @@ import java.util.Optional;
 @Repository
 public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySlot, Long> {
     @Query("SELECT s FROM AvailabilitySlot s WHERE s.isAvailable = true " +
-           "AND s.startTime >= :startTime AND s.endTime <= :endTime")
+            "AND s.startTime >= :startTime AND s.endTime <= :endTime")
     List<AvailabilitySlot> findByStartTimeBetweenAndIsAvailableTrue(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );
 
     @Query("SELECT s FROM AvailabilitySlot s WHERE s.isAvailable = true " +
-           "AND s.startTime >= :startTime AND s.startTime < :endTime")
+            "AND s.startTime >= :startTime AND s.startTime < :endTime")
     List<AvailabilitySlot> findByStartTimeAndEndTimeAndIsAvailableTrue(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
@@ -33,17 +33,17 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
     Optional<AvailabilitySlot> findByAvailabilityTutorAndStartTime(Tutor tutor, LocalDateTime startTime);
 
     @Query("SELECT s FROM AvailabilitySlot s WHERE s.availability.tutor = :tutor " +
-           "AND s.startTime >= :startTime AND s.endTime <= :endTime")
+            "AND s.startTime >= :startTime AND s.endTime <= :endTime")
     List<AvailabilitySlot> findByTutorAndTimeRange(
             @Param("tutor") Tutor tutor,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
 
     @Query("SELECT s FROM AvailabilitySlot s WHERE s.availability = :availability " +
-           "AND s.startTime >= :startTime AND s.endTime <= :endTime")
+            "AND s.startTime >= :startTime AND s.endTime <= :endTime")
     List<AvailabilitySlot> findByAvailabilityAndTimeRange(
-        @Param("availability") Availability availability,
-        @Param("startTime") LocalDateTime startTime,
-        @Param("endTime") LocalDateTime endTime
+            @Param("availability") Availability availability,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
     );
 } 

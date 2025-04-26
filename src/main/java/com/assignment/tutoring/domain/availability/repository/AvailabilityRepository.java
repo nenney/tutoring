@@ -40,10 +40,10 @@ public interface AvailabilityRepository extends JpaRepository<Availability, Long
 
     // 특정 튜터의 특정 기간 내 가능한 시간대 조회
     @Query("SELECT a FROM Availability a WHERE a.tutor = :tutor " +
-           "AND ((a.startTime <= :endTime AND a.endTime >= :startTime))")
+            "AND ((a.startTime <= :endTime AND a.endTime >= :startTime))")
     List<Availability> findTutorAvailabilitiesInRange(
-        @Param("tutor") Tutor tutor,
-        @Param("startTime") LocalDateTime startTime,
-        @Param("endTime") LocalDateTime endTime
+            @Param("tutor") Tutor tutor,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
     );
 }

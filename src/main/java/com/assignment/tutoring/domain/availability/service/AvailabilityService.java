@@ -1,28 +1,26 @@
 package com.assignment.tutoring.domain.availability.service;
 
+import com.assignment.tutoring.domain.availability.dto.AvailabilityDeleteRequestDto;
 import com.assignment.tutoring.domain.availability.dto.AvailabilityRequestDto;
 import com.assignment.tutoring.domain.availability.dto.AvailabilityResponseDto;
-import com.assignment.tutoring.domain.availability.dto.AvailabilitySlotResponseDto;
 import com.assignment.tutoring.domain.availability.entity.Availability;
 import com.assignment.tutoring.domain.availability.entity.AvailabilitySlot;
 import com.assignment.tutoring.domain.availability.repository.AvailabilityRepository;
 import com.assignment.tutoring.domain.availability.repository.AvailabilitySlotRepository;
 import com.assignment.tutoring.domain.lesson.entity.Lesson;
-import com.assignment.tutoring.domain.user.dto.UserResponseDto;
+import com.assignment.tutoring.domain.lesson.service.LessonService;
 import com.assignment.tutoring.domain.user.dto.TutorSimpleResponseDto;
 import com.assignment.tutoring.domain.user.entity.Tutor;
 import com.assignment.tutoring.domain.user.repository.TutorRepository;
-import com.assignment.tutoring.global.error.ErrorCode;
 import com.assignment.tutoring.global.error.AvailabilityException;
+import com.assignment.tutoring.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.assignment.tutoring.domain.lesson.service.LessonService;
-import com.assignment.tutoring.domain.availability.dto.AvailabilityDeleteRequestDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -51,14 +49,14 @@ public class AvailabilityService {
         // 기존 가용성과 중복 체크
         List<Availability> existingAvailabilities = availabilityRepository
                 .findTutorAvailabilitiesInRange(tutor, request.getStartTime(), request.getEndTime());
-        
+
         if (!existingAvailabilities.isEmpty()) {
             throw AvailabilityException.timeSlotAlreadyExists();
         }
 
         // 가용성 생성
         Availability availability = Availability.create(tutor, request.getStartTime(), request.getEndTime());
-        
+
         // 저장
         Availability savedAvailability = availabilityRepository.save(availability);
 
@@ -82,53 +80,53 @@ public class AvailabilityService {
 
         for (Availability availability : overlappingAvailabilities) {
             log.info("Processing availability: {}", availability.getId());
-            
+
             // 기존 Availability의 시작/종료 시간
             LocalDateTime originalStartTime = availability.getStartTime();
             LocalDateTime originalEndTime = availability.getEndTime();
-            
+
             // 삭제할 시간 범위
             LocalDateTime deleteStartTime = request.getStartTime();
             LocalDateTime deleteEndTime = request.getEndTime();
-            
+
             // 삭제할 Slot들 찾기
             List<AvailabilitySlot> slotsToDelete = availabilitySlotRepository.findByAvailabilityAndTimeRange(
-                availability, deleteStartTime, deleteEndTime);
+                    availability, deleteStartTime, deleteEndTime);
             log.info("Found {} slots to delete", slotsToDelete.size());
-            
+
             // 삭제할 Slot들에 연결된 수업 취소
             for (AvailabilitySlot slot : slotsToDelete) {
                 if (slot.getLesson() != null) {
                     lessonService.cancelLessonsBySlot(slot);
                 }
             }
-            
+
             // 기존 Availability의 모든 Slot 삭제
             availabilitySlotRepository.deleteAll(availability.getSlots());
             log.info("Deleted all slots for availability: {}", availability.getId());
-            
+
             // 기존 Availability 삭제
             availabilityRepository.delete(availability);
             log.info("Deleted availability: {}", availability.getId());
-            
+
             // 새로운 Availability들을 생성
             if (originalStartTime.isBefore(deleteStartTime)) {
                 // 이전 시간대의 새로운 Availability 생성 및 저장
                 Availability beforeAvailability = Availability.create(
-                    tutor,
-                    originalStartTime,
-                    deleteStartTime
+                        tutor,
+                        originalStartTime,
+                        deleteStartTime
                 );
                 beforeAvailability = availabilityRepository.save(beforeAvailability);
                 log.info("Created new availability for before time range: {}", beforeAvailability.getId());
             }
-            
+
             if (originalEndTime.isAfter(deleteEndTime)) {
                 // 이후 시간대의 새로운 Availability 생성 및 저장
                 Availability afterAvailability = Availability.create(
-                    tutor,
-                    deleteEndTime,
-                    originalEndTime
+                        tutor,
+                        deleteEndTime,
+                        originalEndTime
                 );
                 afterAvailability = availabilityRepository.save(afterAvailability);
                 log.info("Created new availability for after time range: {}", afterAvailability.getId());
@@ -223,9 +221,9 @@ public class AvailabilityService {
     public void bookSlot(Long slotId) {
         AvailabilitySlot slot = availabilitySlotRepository.findById(slotId)
                 .orElseThrow(AvailabilityException::availabilityNotFound);
-        
+
         validateSlotForBooking(slot);
-        
+
         bookSlot(slot, null);
     }
 
@@ -233,7 +231,7 @@ public class AvailabilityService {
     public void cancelSlot(Long slotId) {
         AvailabilitySlot slot = availabilitySlotRepository.findById(slotId)
                 .orElseThrow(AvailabilityException::availabilityNotFound);
-        
+
         slot.cancel();
     }
 
@@ -245,10 +243,10 @@ public class AvailabilityService {
 
     private void bookSlot(AvailabilitySlot slot, Lesson lesson) {
         AvailabilitySlot newSlot = AvailabilitySlot.createWithLesson(
-            slot.getAvailability(),
-            slot.getStartTime(),
-            slot.getEndTime(),
-            lesson
+                slot.getAvailability(),
+                slot.getStartTime(),
+                slot.getEndTime(),
+                lesson
         );
         availabilitySlotRepository.save(newSlot);
     }

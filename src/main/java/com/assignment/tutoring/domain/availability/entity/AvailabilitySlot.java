@@ -4,7 +4,9 @@ import com.assignment.tutoring.domain.lesson.entity.Lesson;
 import com.assignment.tutoring.domain.user.entity.Tutor;
 import com.assignment.tutoring.global.common.TimeStamped;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
