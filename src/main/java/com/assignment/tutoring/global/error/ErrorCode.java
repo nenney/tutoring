@@ -22,7 +22,25 @@ public enum ErrorCode {
     NOT_TUTOR_AVAILABILITY(HttpStatus.FORBIDDEN, "해당 튜터의 수업 가능 시간이 아닙니다."),
     AVAILABILITY_TIME_INVALID(HttpStatus.BAD_REQUEST, "잘못된 수업 가능 시간입니다."),
     AVAILABILITY_TIME_OVERLAP(HttpStatus.BAD_REQUEST, "이미 등록된 수업 가능 시간입니다."),
-    AVAILABILITY_PAST_TIME(HttpStatus.BAD_REQUEST, "과거 시간은 등록할 수 없습니다.");
+    AVAILABILITY_PAST_TIME(HttpStatus.BAD_REQUEST, "과거 시간은 등록할 수 없습니다."),
+
+    // User 관련 에러
+    TUTOR_NOT_FOUND(HttpStatus.NOT_FOUND, "튜터를 찾을 수 없습니다."),
+    STUDENT_NOT_FOUND(HttpStatus.NOT_FOUND, "학생을 찾을 수 없습니다."),
+
+    // Availability 관련 에러
+    AVAILABILITY_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 존재하는 가용 시간입니다."),
+    AVAILABILITY_OVERLAP(HttpStatus.BAD_REQUEST, "시간이 겹칩니다."),
+
+    // AvailabilitySlot 관련 에러
+    SLOT_NOT_FOUND(HttpStatus.NOT_FOUND, "가용 슬롯을 찾을 수 없습니다."),
+    SLOT_ALREADY_BOOKED(HttpStatus.BAD_REQUEST, "이미 예약된 슬롯입니다."),
+    SLOTS_NOT_CONSECUTIVE(HttpStatus.BAD_REQUEST, "연속된 슬롯이 아닙니다."),
+
+    // Lesson 관련 에러
+    LESSON_NOT_FOUND(HttpStatus.NOT_FOUND, "수업을 찾을 수 없습니다."),
+    LESSON_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "이미 취소된 수업입니다."),
+    LESSON_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 완료된 수업입니다.");
 
     public final HttpStatus status;
     public final String message;
