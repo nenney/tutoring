@@ -39,8 +39,7 @@ public class AvailabilityService {
 
         // 기존 가용성과 중복 체크
         List<Availability> existingAvailabilities = availabilityRepository
-                .findByTutorIdAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
-                        tutorId, request.getStartTime(), request.getEndTime());
+                .findTutorAvailabilitiesInRange(tutorId, request.getStartTime(), request.getEndTime());
         
         if (!existingAvailabilities.isEmpty()) {
             throw AvailabilityException.timeSlotAlreadyExists();
@@ -147,8 +146,7 @@ public class AvailabilityService {
             LocalDateTime endTime
     ) {
         List<Availability> availabilities = availabilityRepository
-                .findByTutorIdAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
-                        tutorId, startTime, endTime);
+                .findTutorAvailabilitiesInRange(tutorId, startTime, endTime);
 
         return availabilities.stream()
                 .map(AvailabilityResponseDto::new)
