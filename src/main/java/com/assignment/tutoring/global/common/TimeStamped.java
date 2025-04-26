@@ -14,6 +14,10 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 public abstract class TimeStamped {
     @CreatedDate
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
+    @Column(nullable = false, updatable = false)
+    protected LocalDateTime createdAt;
+
+    protected TimeStamped() {
+        this.createdAt = LocalDateTime.now();
+    }
 }
