@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -25,15 +27,38 @@ public class Availability extends TimeStamped {
     @Column(nullable = false)
     private LocalDateTime endTime;
 
-    @Column(nullable = false)
-    private boolean available;
+    @OneToMany(mappedBy = "availability", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AvailabilitySlot> slots = new ArrayList<>();
 
     public static Availability create(Tutor tutor, LocalDateTime startTime, LocalDateTime endTime) {
         Availability availability = new Availability();
         availability.tutor = tutor;
         availability.startTime = startTime;
         availability.endTime = endTime;
-        availability.available = true;
         return availability;
+    }
+
+    public void addSlot(AvailabilitySlot slot) {
+        this.slots.add(slot);
+        slot.setAvailability(this);
+    }
+
+    public void createTimeSlots() {
+        LocalDateTime currentTime = startTime;
+        
+        while (currentTime.isBefore(endTime)) {
+            LocalDateTime slotEndTime = currentTime.plusMinutes(30);
+            if (slotEndTime.isAfter(endTime)) {
+                slotEndTime = endTime;
+            }
+            
+            AvailabilitySlot slot = AvailabilitySlot.create(this, currentTime, slotEndTime);
+            addSlot(slot);
+            currentTime = slotEndTime;
+        }
+    }
+
+    public boolean isOverlapping(LocalDateTime otherStartTime, LocalDateTime otherEndTime) {
+        return !(this.endTime.isBefore(otherStartTime) || this.startTime.isAfter(otherEndTime));
     }
 }
