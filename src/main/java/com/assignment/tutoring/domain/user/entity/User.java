@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -28,5 +29,13 @@ public abstract class User extends TimeStamped {
         this.userId = userId;
         this.password = password;
         this.name = name;
+    }
+
+    public void encodePassword(PasswordEncoder passwordEncoder) {
+        this.password = passwordEncoder.encode(this.password);
+    }
+
+    public boolean matchPassword(PasswordEncoder passwordEncoder, String rawPassword) {
+        return passwordEncoder.matches(rawPassword, this.password);
     }
 }

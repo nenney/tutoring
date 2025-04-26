@@ -1,19 +1,18 @@
 package com.assignment.tutoring.domain.user.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-@Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
+@NoArgsConstructor
 public class UserRequestDto {
-    @NotBlank(message = "아이디는 필수입니다.")
+    @NotBlank(message = "아이디를 입력해주세요.")
     private String userId;
 
-    @NotBlank(message = "비밀번호는 필수입니다.")
+    @NotBlank(message = "비밀번호를 입력해주세요.")
     private String password;
 
-    @NotBlank(message = "이름은 필수입니다.")
+    @NotBlank(message = "이름을 입력해주세요.")
     private String name;
 } 

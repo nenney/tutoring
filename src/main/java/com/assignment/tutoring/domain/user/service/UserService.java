@@ -1,15 +1,18 @@
 package com.assignment.tutoring.domain.user.service;
 
+import com.assignment.tutoring.domain.user.dto.LoginRequestDto;
 import com.assignment.tutoring.domain.user.entity.Student;
 import com.assignment.tutoring.domain.user.entity.Tutor;
 import com.assignment.tutoring.domain.user.entity.User;
 import com.assignment.tutoring.domain.user.repository.StudentRepository;
 import com.assignment.tutoring.domain.user.repository.TutorRepository;
 import com.assignment.tutoring.domain.user.dto.UserRequestDto;
+import com.assignment.tutoring.global.error.UserException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.assignment.tutoring.global.error.UserException;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +22,7 @@ import java.util.Optional;
 public class UserService {
     private final TutorRepository tutorRepository;
     private final StudentRepository studentRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // 튜터 회원가입
     @Transactional
@@ -30,6 +34,7 @@ public class UserService {
         }
 
         Tutor tutor = new Tutor(request.getUserId(), request.getPassword(), request.getName());
+        tutor.encodePassword(passwordEncoder);
         return tutorRepository.save(tutor);
     }
 
@@ -43,11 +48,12 @@ public class UserService {
         }
 
         Student student = new Student(request.getUserId(), request.getPassword(), request.getName());
+        student.encodePassword(passwordEncoder);
         return studentRepository.save(student);
     }
 
     // 로그인
-    public User login(UserRequestDto request) {
+    public User login(LoginRequestDto request) {
         Optional<User> user = tutorRepository.findByUserId(request.getUserId())
                 .map(tutor -> (User) tutor)
                 .or(() -> studentRepository.findByUserId(request.getUserId())
@@ -55,10 +61,24 @@ public class UserService {
 
         User foundUser = user.orElseThrow(UserException::userNotFound);
 
-        if (!foundUser.getPassword().equals(request.getPassword())) {
+        if (!foundUser.matchPassword(passwordEncoder, request.getPassword())) {
             throw UserException.passwordMismatch();
         }
 
         return foundUser;
+    }
+
+    public User findByUserId(String userId) {
+        Optional<Tutor> tutor = tutorRepository.findByUserId(userId);
+        if (tutor.isPresent()) {
+            return tutor.get();
+        }
+        
+        Optional<Student> student = studentRepository.findByUserId(userId);
+        if (student.isPresent()) {
+            return student.get();
+        }
+        
+        throw UserException.userNotFound();
     }
 }

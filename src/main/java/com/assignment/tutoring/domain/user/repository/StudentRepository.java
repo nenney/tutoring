@@ -1,8 +1,10 @@
 package com.assignment.tutoring.domain.user.repository;
 
 import com.assignment.tutoring.domain.user.entity.Student;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@Repository
-public interface StudentRepository extends UserRepository<Student> {
+import java.util.Optional;
+
+public interface StudentRepository extends JpaRepository<Student, Long> {
+    Optional<Student> findByUserId(String userId);
 } 

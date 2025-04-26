@@ -14,6 +14,7 @@ public class UserResponseDto extends TimeStamped {
     private String name;
 
     public UserResponseDto(User user) {
+        super();
         this.id = user.getId();
         this.userId = user.getUserId();
         this.name = user.getName();
