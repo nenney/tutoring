@@ -35,6 +35,7 @@ public class Availability extends TimeStamped {
         availability.tutor = tutor;
         availability.startTime = startTime;
         availability.endTime = endTime;
+        availability.createTimeSlots();
         return availability;
     }
 
@@ -42,8 +43,10 @@ public class Availability extends TimeStamped {
         LocalDateTime currentTime = startTime;
         while (currentTime.isBefore(endTime)) {
             LocalDateTime nextTime = currentTime.plusMinutes(30);
-            AvailabilitySlot slot = AvailabilitySlot.create(this, currentTime, nextTime);
-            this.slots.add(slot);
+            if (!nextTime.isAfter(endTime)) {
+                AvailabilitySlot slot = AvailabilitySlot.create(this, currentTime, nextTime);
+                this.slots.add(slot);
+            }
             currentTime = nextTime;
         }
     }

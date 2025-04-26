@@ -40,7 +40,10 @@ public enum ErrorCode {
     // Lesson 관련 에러
     LESSON_NOT_FOUND(HttpStatus.NOT_FOUND, "수업을 찾을 수 없습니다."),
     LESSON_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "이미 취소된 수업입니다."),
-    LESSON_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 완료된 수업입니다.");
+    LESSON_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 완료된 수업입니다."),
+
+    // New error code
+    FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
 
     public final HttpStatus status;
     public final String message;

@@ -16,7 +16,7 @@ public class AvailabilitySlot extends TimeStamped {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "availability_id")
     private Availability availability;
 
@@ -40,6 +40,7 @@ public class AvailabilitySlot extends TimeStamped {
     public static AvailabilitySlot create(Availability availability, LocalDateTime startTime, LocalDateTime endTime) {
         AvailabilitySlot slot = new AvailabilitySlot();
         slot.availability = availability;
+        slot.tutor = availability.getTutor();
         slot.startTime = startTime;
         slot.endTime = endTime;
         slot.isAvailable = true;
