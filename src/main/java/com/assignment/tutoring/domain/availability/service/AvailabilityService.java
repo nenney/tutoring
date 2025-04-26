@@ -7,10 +7,12 @@ import com.assignment.tutoring.domain.availability.entity.Availability;
 import com.assignment.tutoring.domain.availability.entity.AvailabilitySlot;
 import com.assignment.tutoring.domain.availability.repository.AvailabilityRepository;
 import com.assignment.tutoring.domain.availability.repository.AvailabilitySlotRepository;
+import com.assignment.tutoring.domain.lesson.entity.Lesson;
 import com.assignment.tutoring.domain.user.dto.UserResponseDto;
 import com.assignment.tutoring.domain.user.dto.TutorSimpleResponseDto;
 import com.assignment.tutoring.domain.user.entity.Tutor;
 import com.assignment.tutoring.domain.user.repository.TutorRepository;
+import com.assignment.tutoring.global.error.ErrorCode;
 import com.assignment.tutoring.global.error.AvailabilityException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AvailabilityService {
     private final AvailabilityRepository availabilityRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
@@ -84,7 +87,7 @@ public class AvailabilityService {
         }
 
         List<AvailabilitySlot> slots = availabilitySlotRepository
-                .findByStartTimeBetweenAndAvailableTrue(startDate, endDate);
+                .findByStartTimeBetweenAndIsAvailableTrue(startDate, endDate);
 
         List<AvailabilityResponseDto> availableSlots = new ArrayList<>();
 
@@ -114,7 +117,7 @@ public class AvailabilityService {
 
     // 선택된 시간대 & 수업 길이로 가능한 튜터 조회
     @Transactional(readOnly = true)
-    public List<UserResponseDto> getAvailableTutors(
+    public List<TutorSimpleResponseDto> getAvailableTutors(
             LocalDateTime startTime,
             LocalDateTime endTime,
             int durationMinutes
@@ -125,16 +128,17 @@ public class AvailabilityService {
         }
 
         List<AvailabilitySlot> slots = availabilitySlotRepository
-                .findByStartTimeAndEndTimeAndAvailableTrue(startTime, endTime);
+                .findByStartTimeAndEndTimeAndIsAvailableTrue(startTime, endTime);
 
         return slots.stream()
                 .filter(slot -> {
+                    // 슬롯의 시작 시간부터 durationMinutes 동안 사용 가능한지 확인
                     LocalDateTime slotEndTime = slot.getStartTime().plusMinutes(durationMinutes);
-                    return !slotEndTime.isAfter(slot.getEndTime());
+                    return !slotEndTime.isAfter(slot.getEndTime()) && !slotEndTime.isAfter(endTime);
                 })
                 .map(slot -> slot.getAvailability().getTutor())
                 .distinct()
-                .map(UserResponseDto::new)
+                .map(TutorSimpleResponseDto::new)
                 .collect(Collectors.toList());
     }
 
@@ -158,11 +162,9 @@ public class AvailabilityService {
         AvailabilitySlot slot = availabilitySlotRepository.findById(slotId)
                 .orElseThrow(AvailabilityException::availabilityNotFound);
         
-        if (!slot.isAvailable()) {
-            throw AvailabilityException.timeSlotAlreadyExists();
-        }
+        validateSlotForBooking(slot);
         
-        slot.book();
+        bookSlot(slot, null);
     }
 
     @Transactional
@@ -171,5 +173,21 @@ public class AvailabilityService {
                 .orElseThrow(AvailabilityException::availabilityNotFound);
         
         slot.cancel();
+    }
+
+    private void validateSlotForBooking(AvailabilitySlot slot) {
+        if (!slot.isAvailable()) {
+            throw new AvailabilityException(ErrorCode.SLOT_ALREADY_BOOKED);
+        }
+    }
+
+    private void bookSlot(AvailabilitySlot slot, Lesson lesson) {
+        AvailabilitySlot newSlot = AvailabilitySlot.createWithLesson(
+            slot.getAvailability(),
+            slot.getStartTime(),
+            slot.getEndTime(),
+            lesson
+        );
+        availabilitySlotRepository.save(newSlot);
     }
 }

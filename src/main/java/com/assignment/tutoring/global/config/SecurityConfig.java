@@ -31,8 +31,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/users/tutors/signup", "/api/users/students/signup").permitAll()
-                .requestMatchers("/api/v1/availabilities/tutors/**").hasRole("TUTOR")
-                .requestMatchers("/api/v1/availabilities/search", "/api/v1/availabilities/tutors/search").hasRole("STUDENT")
+                .requestMatchers("/api/v1/availabilities/tutors/search").hasRole("STUDENT")
+                .requestMatchers("/api/v1/availabilities/search").hasRole("STUDENT")
+                .requestMatchers("/api/v1/availabilities/tutors/{tutorId}").hasRole("TUTOR")
+                .requestMatchers("/api/v1/availabilities/{availabilityId}/tutors/{tutorId}").hasRole("TUTOR")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

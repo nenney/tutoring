@@ -18,7 +18,7 @@ public class Availability extends TimeStamped {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tutor_id", nullable = false)
+    @JoinColumn(name = "tutor_id")
     private Tutor tutor;
 
     @Column(nullable = false)
@@ -27,7 +27,7 @@ public class Availability extends TimeStamped {
     @Column(nullable = false)
     private LocalDateTime endTime;
 
-    @OneToMany(mappedBy = "availability", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "availability", cascade = CascadeType.ALL)
     private List<AvailabilitySlot> slots = new ArrayList<>();
 
     public static Availability create(Tutor tutor, LocalDateTime startTime, LocalDateTime endTime) {
@@ -38,23 +38,13 @@ public class Availability extends TimeStamped {
         return availability;
     }
 
-    public void addSlot(AvailabilitySlot slot) {
-        this.slots.add(slot);
-        slot.setAvailability(this);
-    }
-
     public void createTimeSlots() {
         LocalDateTime currentTime = startTime;
-        
         while (currentTime.isBefore(endTime)) {
-            LocalDateTime slotEndTime = currentTime.plusMinutes(30);
-            if (slotEndTime.isAfter(endTime)) {
-                slotEndTime = endTime;
-            }
-            
-            AvailabilitySlot slot = AvailabilitySlot.create(this, currentTime, slotEndTime);
-            addSlot(slot);
-            currentTime = slotEndTime;
+            LocalDateTime nextTime = currentTime.plusMinutes(30);
+            AvailabilitySlot slot = AvailabilitySlot.create(this, currentTime, nextTime);
+            this.slots.add(slot);
+            currentTime = nextTime;
         }
     }
 
