@@ -46,11 +46,11 @@ public class LessonService {
                 .orElseThrow(() -> new LessonException(ErrorCode.STUDENT_NOT_FOUND));
 
         // 3. 수업 시간 유효성 검사
-        validateLessonTime(request.getStartTime(), request.getType());
+        validateLessonTime(request.getStartTime(), request.getEndTime(), request.getType());
 
         // 4. 해당 시간대의 availability 조회
         List<AvailabilitySlot> slots = availabilitySlotRepository.findByTutorAndTimeRange(
-                tutor, request.getStartTime(), request.getStartTime().plusMinutes(request.getType().getDuration()));
+                tutor, request.getStartTime(), request.getEndTime());
 
         // 5. 슬롯이 예약 가능한지 확인
         validateSlotsForBooking(slots);
@@ -73,17 +73,15 @@ public class LessonService {
         return LessonResponseDto.from(lesson);
     }
 
-    private void validateLessonTime(LocalDateTime startTime, LessonType type) {
-        if (startTime.isAfter(startTime.plusMinutes(type.getDuration()))) {
-            throw new LessonException(ErrorCode.LESSON_TIME_INVALID);
-        }
+    private void validateLessonTime(LocalDateTime startTime, LocalDateTime endTime, LessonType type) {
+        Duration duration = Duration.between(startTime, endTime);
+        long minutes = duration.toMinutes();
 
-        Duration duration = Duration.between(startTime, startTime.plusMinutes(type.getDuration()));
-        if (type == LessonType.THIRTY_MINUTES && duration.toMinutes() != 30) {
-            throw new LessonException(ErrorCode.LESSON_DURATION_INVALID);
+        if (type == LessonType.THIRTY_MINUTES && minutes != 30) {
+            throw new LessonException(ErrorCode.LESSON_DURATION_INVALID, "선택한 수업 길이가 30분 입니다.");
         }
-        if (type == LessonType.SIXTY_MINUTES && duration.toMinutes() != 60) {
-            throw new LessonException(ErrorCode.LESSON_DURATION_INVALID);
+        if (type == LessonType.SIXTY_MINUTES && minutes != 60) {
+            throw new LessonException(ErrorCode.LESSON_DURATION_INVALID, "선택한 수업 길이가 60분 입니다.");
         }
     }
 

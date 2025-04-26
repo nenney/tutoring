@@ -14,8 +14,8 @@ public enum ErrorCode {
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
 
     // 수업 관련 에러
-    LESSON_TIME_INVALID(HttpStatus.BAD_REQUEST, "수업 시간이 잘못되었습니다."),
-    LESSON_DURATION_INVALID(HttpStatus.BAD_REQUEST, "수업 길이가 잘못되었습니다."),
+    LESSON_TIME_INVALID(HttpStatus.BAD_REQUEST, "수업 시간이 유효하지 않습니다."),
+    LESSON_DURATION_INVALID(HttpStatus.BAD_REQUEST, "수업 길이가 유효하지 않습니다."),
 
     // 수업 가능 시간 관련 에러
     AVAILABILITY_NOT_FOUND(HttpStatus.NOT_FOUND, "수업 가능 시간을 찾을 수 없습니다."),
@@ -33,8 +33,8 @@ public enum ErrorCode {
     AVAILABILITY_OVERLAP(HttpStatus.BAD_REQUEST, "시간이 겹칩니다."),
 
     // AvailabilitySlot 관련 에러
-    SLOT_NOT_FOUND(HttpStatus.NOT_FOUND, "가용 슬롯을 찾을 수 없습니다."),
-    SLOT_ALREADY_BOOKED(HttpStatus.BAD_REQUEST, "이미 예약된 슬롯입니다."),
+    SLOT_NOT_FOUND(HttpStatus.NOT_FOUND, "예약 가능한 시간을 찾을 수 없습니다."),
+    SLOT_ALREADY_BOOKED(HttpStatus.BAD_REQUEST, "이미 예약된 시간입니다."),
     SLOTS_NOT_CONSECUTIVE(HttpStatus.BAD_REQUEST, "연속된 슬롯이 아닙니다."),
 
     // Lesson 관련 에러

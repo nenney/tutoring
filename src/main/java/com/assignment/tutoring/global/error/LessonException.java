@@ -1,12 +1,20 @@
 package com.assignment.tutoring.global.error;
 
-public class LessonException extends BusinessException {
+import lombok.Getter;
+
+@Getter
+public class LessonException extends RuntimeException {
+    private final ErrorCode errorCode;
+    private final String message;
+
     public LessonException(ErrorCode errorCode) {
-        super(errorCode);
+        this.errorCode = errorCode;
+        this.message = errorCode.getMessage();
     }
 
     public LessonException(ErrorCode errorCode, String message) {
-        super(errorCode, message);
+        this.errorCode = errorCode;
+        this.message = message;
     }
 
     // 정적 팩토리 메서드들

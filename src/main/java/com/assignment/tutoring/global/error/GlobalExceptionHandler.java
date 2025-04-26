@@ -1,5 +1,6 @@
 package com.assignment.tutoring.global.error;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -24,5 +25,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleException(Exception e) {
         ErrorResponseDto response = ErrorResponseDto.of(ErrorCode.INTERNAL_SERVER_ERROR);
         return new ResponseEntity<>(response, response.getStatus());
+    }
+
+    @ExceptionHandler(LessonException.class)
+    public ResponseEntity<ErrorResponse> handleLessonException(LessonException e) {
+        ErrorResponse response = new ErrorResponse(
+            e.getErrorCode().getStatus().value(),
+            e.getMessage()
+        );
+        return new ResponseEntity<>(response, e.getErrorCode().getStatus());
     }
 }
