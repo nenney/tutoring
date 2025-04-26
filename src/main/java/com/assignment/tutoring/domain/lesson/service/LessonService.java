@@ -15,6 +15,8 @@ import com.assignment.tutoring.domain.user.repository.TutorRepository;
 import com.assignment.tutoring.global.error.ErrorCode;
 import com.assignment.tutoring.global.error.LessonException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class LessonService {
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final TutorRepository tutorRepository;
     private final StudentRepository studentRepository;
+    private static final Logger log = LoggerFactory.getLogger(LessonService.class);
 
     @Transactional
     public LessonResponseDto createLesson(LessonRequestDto request) {
@@ -97,18 +100,12 @@ public class LessonService {
 
     @Transactional
     public void cancelLesson(Long lessonId) {
+        log.info("Cancelling lesson with ID: {}", lessonId);
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new LessonException(ErrorCode.LESSON_NOT_FOUND));
-
         lesson.cancel();
-
-        // 60분 수업인 경우 다음 슬롯도 취소
-        if (lesson.getType() == LessonType.SIXTY_MINUTES) {
-            AvailabilitySlot nextSlot = availabilitySlotRepository.findByAvailabilityTutorAndStartTime(
-                    lesson.getTutor(), lesson.getStartTime().plusMinutes(30))
-                    .orElseThrow(() -> new LessonException(ErrorCode.SLOT_NOT_FOUND));
-            nextSlot.cancel();
-        }
+        lessonRepository.save(lesson);
+        log.info("Successfully cancelled lesson: {}", lesson);
     }
 
     @Transactional(readOnly = true)
@@ -136,5 +133,21 @@ public class LessonService {
         return lessons.stream()
                 .map(LessonResponseDto::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void cancelLessonsBySlot(AvailabilitySlot slot) {
+        log.info("Cancelling lessons for slot: {}", slot.getId());
+        if (slot.getLesson() != null) {
+            cancelLesson(slot.getLesson().getId());
+        }
+    }
+
+    @Transactional
+    public void cancelLessons(Tutor tutor, LocalDateTime startTime) {
+        List<Lesson> lessons = lessonRepository.findByTutorAndStartTime(tutor, startTime);
+        for (Lesson lesson : lessons) {
+            lesson.cancel();
+        }
     }
 } 

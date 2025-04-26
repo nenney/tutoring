@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,6 +20,7 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -33,6 +35,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/users/tutors/signup", "/api/users/students/signup").permitAll()
                 .requestMatchers("/api/v1/availabilities/tutors/search").hasRole("STUDENT")
                 .requestMatchers("/api/v1/availabilities/search").hasRole("STUDENT")
+                .requestMatchers("/api/v1/availabilities/tutors").hasRole("TUTOR")
                 .requestMatchers("/api/v1/availabilities/tutors/{tutorId}").hasRole("TUTOR")
                 .requestMatchers("/api/v1/availabilities/{availabilityId}/tutors/{tutorId}").hasRole("TUTOR")
                 .anyRequest().authenticated()

@@ -1,5 +1,6 @@
 package com.assignment.tutoring.domain.availability.repository;
 
+import com.assignment.tutoring.domain.availability.entity.Availability;
 import com.assignment.tutoring.domain.availability.entity.AvailabilitySlot;
 import com.assignment.tutoring.domain.user.entity.Tutor;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -37,4 +38,12 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
             @Param("tutor") Tutor tutor,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
+
+    @Query("SELECT s FROM AvailabilitySlot s WHERE s.availability = :availability " +
+           "AND s.startTime >= :startTime AND s.endTime <= :endTime")
+    List<AvailabilitySlot> findByAvailabilityAndTimeRange(
+        @Param("availability") Availability availability,
+        @Param("startTime") LocalDateTime startTime,
+        @Param("endTime") LocalDateTime endTime
+    );
 } 

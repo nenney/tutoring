@@ -17,6 +17,12 @@ import com.assignment.tutoring.global.error.AvailabilityException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.assignment.tutoring.domain.lesson.service.LessonService;
+import com.assignment.tutoring.domain.availability.dto.AvailabilityDeleteRequestDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,6 +36,8 @@ public class AvailabilityService {
     private final AvailabilityRepository availabilityRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final TutorRepository tutorRepository;
+    private final LessonService lessonService;
+    private static final Logger log = LoggerFactory.getLogger(AvailabilityService.class);
 
     // 튜터의 가능한 시간대 등록
     @Transactional
@@ -42,7 +50,7 @@ public class AvailabilityService {
 
         // 기존 가용성과 중복 체크
         List<Availability> existingAvailabilities = availabilityRepository
-                .findTutorAvailabilitiesInRange(tutor.getId(), request.getStartTime(), request.getEndTime());
+                .findTutorAvailabilitiesInRange(tutor, request.getStartTime(), request.getEndTime());
         
         if (!existingAvailabilities.isEmpty()) {
             throw AvailabilityException.timeSlotAlreadyExists();
@@ -50,9 +58,6 @@ public class AvailabilityService {
 
         // 가용성 생성
         Availability availability = Availability.create(tutor, request.getStartTime(), request.getEndTime());
-        
-        // 30분 단위 시간 슬롯 생성
-        availability.createTimeSlots();
         
         // 저장
         Availability savedAvailability = availabilityRepository.save(availability);
@@ -62,18 +67,73 @@ public class AvailabilityService {
 
     // 튜터의 가능한 시간대 삭제
     @Transactional
-    public void deleteAvailability(String userId, Long availabilityId) {
-        Tutor tutor = tutorRepository.findByUserId(userId)
+    public void deleteAvailability(AvailabilityDeleteRequestDto request) {
+        log.info("Starting delete availability process for tutor");
+        validateTime(request.getStartTime(), request.getEndTime());
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Tutor tutor = tutorRepository.findByUserId(authentication.getName())
                 .orElseThrow(() -> new AvailabilityException(ErrorCode.TUTOR_NOT_FOUND));
+        log.info("Found tutor with ID: {}", tutor.getId());
 
-        Availability availability = availabilityRepository.findById(availabilityId)
-                .orElseThrow(AvailabilityException::availabilityNotFound);
+        List<Availability> overlappingAvailabilities = availabilityRepository.findTutorAvailabilitiesInRange(
+                tutor, request.getStartTime(), request.getEndTime());
+        log.info("Found {} overlapping availabilities", overlappingAvailabilities.size());
 
-        if (!availability.getTutor().getId().equals(tutor.getId())) {
-            throw AvailabilityException.notTutorAvailability();
+        for (Availability availability : overlappingAvailabilities) {
+            log.info("Processing availability: {}", availability.getId());
+            
+            // 기존 Availability의 시작/종료 시간
+            LocalDateTime originalStartTime = availability.getStartTime();
+            LocalDateTime originalEndTime = availability.getEndTime();
+            
+            // 삭제할 시간 범위
+            LocalDateTime deleteStartTime = request.getStartTime();
+            LocalDateTime deleteEndTime = request.getEndTime();
+            
+            // 삭제할 Slot들 찾기
+            List<AvailabilitySlot> slotsToDelete = availabilitySlotRepository.findByAvailabilityAndTimeRange(
+                availability, deleteStartTime, deleteEndTime);
+            log.info("Found {} slots to delete", slotsToDelete.size());
+            
+            // 삭제할 Slot들에 연결된 수업 취소
+            for (AvailabilitySlot slot : slotsToDelete) {
+                if (slot.getLesson() != null) {
+                    lessonService.cancelLessonsBySlot(slot);
+                }
+            }
+            
+            // 기존 Availability의 모든 Slot 삭제
+            availabilitySlotRepository.deleteAll(availability.getSlots());
+            log.info("Deleted all slots for availability: {}", availability.getId());
+            
+            // 기존 Availability 삭제
+            availabilityRepository.delete(availability);
+            log.info("Deleted availability: {}", availability.getId());
+            
+            // 새로운 Availability들을 생성
+            if (originalStartTime.isBefore(deleteStartTime)) {
+                // 이전 시간대의 새로운 Availability 생성 및 저장
+                Availability beforeAvailability = Availability.create(
+                    tutor,
+                    originalStartTime,
+                    deleteStartTime
+                );
+                beforeAvailability = availabilityRepository.save(beforeAvailability);
+                log.info("Created new availability for before time range: {}", beforeAvailability.getId());
+            }
+            
+            if (originalEndTime.isAfter(deleteEndTime)) {
+                // 이후 시간대의 새로운 Availability 생성 및 저장
+                Availability afterAvailability = Availability.create(
+                    tutor,
+                    deleteEndTime,
+                    originalEndTime
+                );
+                afterAvailability = availabilityRepository.save(afterAvailability);
+                log.info("Created new availability for after time range: {}", afterAvailability.getId());
+            }
         }
-
-        availabilityRepository.delete(availability);
     }
 
     // 기간 & 수업 길이로 가능한 시간대 조회 (튜터 정보 없이)
@@ -152,7 +212,7 @@ public class AvailabilityService {
                 .orElseThrow(() -> new AvailabilityException(ErrorCode.TUTOR_NOT_FOUND));
 
         List<Availability> availabilities = availabilityRepository
-                .findTutorAvailabilitiesInRange(tutor.getId(), LocalDateTime.now(), LocalDateTime.now().plusHours(24));
+                .findTutorAvailabilitiesInRange(tutor, LocalDateTime.now(), LocalDateTime.now().plusHours(24));
 
         return availabilities.stream()
                 .map(AvailabilityResponseDto::new)
@@ -191,5 +251,14 @@ public class AvailabilityService {
             lesson
         );
         availabilitySlotRepository.save(newSlot);
+    }
+
+    private void validateTime(LocalDateTime startTime, LocalDateTime endTime) {
+        if (startTime.isAfter(endTime)) {
+            throw new AvailabilityException(ErrorCode.AVAILABILITY_TIME_INVALID, "시작 시간은 종료 시간보다 이전이어야 합니다.");
+        }
+        if (startTime.isBefore(LocalDateTime.now())) {
+            throw new AvailabilityException(ErrorCode.AVAILABILITY_TIME_INVALID, "과거 시간은 삭제할 수 없습니다.");
+        }
     }
 }

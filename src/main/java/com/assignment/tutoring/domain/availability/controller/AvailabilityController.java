@@ -2,6 +2,7 @@ package com.assignment.tutoring.domain.availability.controller;
 
 import com.assignment.tutoring.domain.availability.dto.AvailabilityRequestDto;
 import com.assignment.tutoring.domain.availability.dto.AvailabilityResponseDto;
+import com.assignment.tutoring.domain.availability.dto.AvailabilityDeleteRequestDto;
 import com.assignment.tutoring.domain.availability.service.AvailabilityService;
 import com.assignment.tutoring.domain.user.dto.TutorSimpleResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +24,7 @@ import java.util.List;
 public class AvailabilityController {
 
     private final AvailabilityService availabilityService;
+    private static final Logger log = LoggerFactory.getLogger(AvailabilityController.class);
 
     // (튜터) 수업 가능한 시간대 등록 API
     @PostMapping("/tutors")
@@ -29,12 +33,21 @@ public class AvailabilityController {
         return ResponseEntity.ok(availabilityService.createAvailability(authentication.getName(), request));
     }
 
-    @DeleteMapping("/{availabilityId}/tutors")
+    @DeleteMapping("/tutors")
+    @PreAuthorize("hasRole('TUTOR')")
     public ResponseEntity<Void> deleteAvailability(
-            @PathVariable Long availabilityId) {
+            @RequestBody AvailabilityDeleteRequestDto request) {
+        log.info("Received delete availability request: {}", request);
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        availabilityService.deleteAvailability(authentication.getName(), availabilityId);
-        return ResponseEntity.noContent().build();
+        log.info("Current user: {}", authentication.getName());
+        try {
+            availabilityService.deleteAvailability(request);
+            log.info("Successfully processed delete availability request");
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("Error processing delete availability request", e);
+            throw e;
+        }
     }
 
     // (학생) 수업 가능한 시간대 조회 API
