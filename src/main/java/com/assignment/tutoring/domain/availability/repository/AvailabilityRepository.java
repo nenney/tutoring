@@ -17,20 +17,27 @@ public interface AvailabilityRepository extends JpaRepository<Availability, Long
     );
 
     // 특정 튜터의 가능한 시간대 조회
-    List<Availability> findByTutorIdAndStartTimeBetweenAndAvailableTrue(
+    List<Availability> findByTutorIdAndStartTimeBetween(
             Long tutorId,
             LocalDateTime startTime,
             LocalDateTime endTime
     );
 
     // 특정 기간 내의 모든 가능한 시간대 조회
-    List<Availability> findByStartTimeBetweenAndAvailableTrue(
+    List<Availability> findByStartTimeBetween(
             LocalDateTime startTime,
             LocalDateTime endTime
     );
 
     // 특정 시간대의 가능한 시간대 조회
-    List<Availability> findByStartTimeAndEndTimeAndAvailableTrue(
+    List<Availability> findByStartTimeAndEndTime(
+            LocalDateTime startTime,
+            LocalDateTime endTime
+    );
+
+    // 특정 튜터의 특정 기간 내 가능한 시간대 조회
+    List<Availability> findByTutorIdAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
+            Long tutorId,
             LocalDateTime startTime,
             LocalDateTime endTime
     );

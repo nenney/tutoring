@@ -2,9 +2,13 @@ package com.assignment.tutoring.domain.availability.service;
 
 import com.assignment.tutoring.domain.availability.dto.AvailabilityRequestDto;
 import com.assignment.tutoring.domain.availability.dto.AvailabilityResponseDto;
+import com.assignment.tutoring.domain.availability.dto.AvailabilitySlotResponseDto;
 import com.assignment.tutoring.domain.availability.entity.Availability;
+import com.assignment.tutoring.domain.availability.entity.AvailabilitySlot;
 import com.assignment.tutoring.domain.availability.repository.AvailabilityRepository;
+import com.assignment.tutoring.domain.availability.repository.AvailabilitySlotRepository;
 import com.assignment.tutoring.domain.user.dto.UserResponseDto;
+import com.assignment.tutoring.domain.user.dto.TutorSimpleResponseDto;
 import com.assignment.tutoring.domain.user.entity.Tutor;
 import com.assignment.tutoring.domain.user.repository.TutorRepository;
 import com.assignment.tutoring.global.error.AvailabilityException;
@@ -13,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,6 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AvailabilityService {
     private final AvailabilityRepository availabilityRepository;
+    private final AvailabilitySlotRepository availabilitySlotRepository;
     private final TutorRepository tutorRepository;
 
     // 튜터의 가능한 시간대 등록
@@ -31,24 +37,25 @@ public class AvailabilityService {
         Tutor tutor = tutorRepository.findById(tutorId)
                 .orElseThrow(AvailabilityException::tutorNotFound);
 
-        // 시간대 중복 체크
-        if (availabilityRepository.existsByTutorIdAndStartTimeAndEndTime(
-                tutorId, request.getStartTime(), request.getEndTime())) {
+        // 기존 가용성과 중복 체크
+        List<Availability> existingAvailabilities = availabilityRepository
+                .findByTutorIdAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
+                        tutorId, request.getStartTime(), request.getEndTime());
+        
+        if (!existingAvailabilities.isEmpty()) {
             throw AvailabilityException.timeSlotAlreadyExists();
         }
 
-        // 최소 수업 시간 검사 (30분)
-        if (request.getEndTime().isBefore(request.getStartTime().plusMinutes(30))) {
-            throw AvailabilityException.timeInvalid();
-        }
+        // 가용성 생성
+        Availability availability = Availability.create(tutor, request.getStartTime(), request.getEndTime());
+        
+        // 30분 단위 시간 슬롯 생성
+        availability.createTimeSlots();
+        
+        // 저장
+        Availability savedAvailability = availabilityRepository.save(availability);
 
-        Availability availability = Availability.create(
-                tutor,
-                request.getStartTime(),
-                request.getEndTime()
-        );
-
-        return new AvailabilityResponseDto(availabilityRepository.save(availability));
+        return new AvailabilityResponseDto(savedAvailability);
     }
 
     // 튜터의 가능한 시간대 삭제
@@ -66,27 +73,44 @@ public class AvailabilityService {
 
     // 기간 & 수업 길이로 가능한 시간대 조회 (튜터 정보 없이)
     @Transactional(readOnly = true)
-    public List<AvailabilityResponseDto> getAvailableTimeSlots(
-            LocalDateTime startDate,
-            LocalDateTime endDate,
-            int durationMinutes
-    ) {
+    public List<AvailabilityResponseDto> getAvailableTimeSlots(LocalDateTime startDate, LocalDateTime endDate, int durationMinutes) {
         // 기간 유효성 검사
         if (startDate.isAfter(endDate)) {
             throw AvailabilityException.timeInvalid();
         }
 
-        List<Availability> availabilities = availabilityRepository
+        // 30분 단위로 정확히 맞는지 검사
+        if (startDate.getMinute() % 30 != 0 || endDate.getMinute() % 30 != 0) {
+            throw AvailabilityException.timeInvalid();
+        }
+
+        List<AvailabilitySlot> slots = availabilitySlotRepository
                 .findByStartTimeBetweenAndAvailableTrue(startDate, endDate);
 
-        return availabilities.stream()
-                .filter(availability ->
-                        // 수업 길이에 맞는 시간대만 필터링
-                        availability.getEndTime()
-                                .isBefore(availability.getStartTime().plusMinutes(durationMinutes))
-                )
-                .map(availability -> new AvailabilityResponseDto(availability, true)) // 튜터 정보 제외
-                .collect(Collectors.toList());
+        List<AvailabilityResponseDto> availableSlots = new ArrayList<>();
+
+        for (AvailabilitySlot slot : slots) {
+            LocalDateTime slotStartTime = slot.getStartTime();
+            LocalDateTime slotEndTime = slotStartTime.plusMinutes(durationMinutes);
+
+            // 슬롯의 종료 시간이 요청한 endDate를 초과하지 않는지 확인
+            if (!slotEndTime.isAfter(endDate)) {
+                // 30분 단위로 정확히 맞는지 확인
+                if (slotStartTime.getMinute() % 30 == 0) {
+                    availableSlots.add(createResponseDto(slot.getAvailability().getTutor(), slotStartTime, slotEndTime));
+                }
+            }
+        }
+
+        return availableSlots;
+    }
+
+    private AvailabilityResponseDto createResponseDto(Tutor tutor, LocalDateTime startTime, LocalDateTime endTime) {
+        return AvailabilityResponseDto.builder()
+                .startTime(startTime)
+                .endTime(endTime)
+                .tutor(new TutorSimpleResponseDto(tutor))
+                .build();
     }
 
     // 선택된 시간대 & 수업 길이로 가능한 튜터 조회
@@ -101,12 +125,16 @@ public class AvailabilityService {
             throw AvailabilityException.timeInvalid();
         }
 
-        List<Availability> availabilities = availabilityRepository
+        List<AvailabilitySlot> slots = availabilitySlotRepository
                 .findByStartTimeAndEndTimeAndAvailableTrue(startTime, endTime);
 
-        return availabilities.stream()
-                .map(Availability::getTutor)
-                .distinct() // 중복 튜터 제거
+        return slots.stream()
+                .filter(slot -> {
+                    LocalDateTime slotEndTime = slot.getStartTime().plusMinutes(durationMinutes);
+                    return !slotEndTime.isAfter(slot.getEndTime());
+                })
+                .map(slot -> slot.getAvailability().getTutor())
+                .distinct()
                 .map(UserResponseDto::new)
                 .collect(Collectors.toList());
     }
@@ -119,11 +147,31 @@ public class AvailabilityService {
             LocalDateTime endTime
     ) {
         List<Availability> availabilities = availabilityRepository
-                .findByTutorIdAndStartTimeBetweenAndAvailableTrue(
+                .findByTutorIdAndStartTimeLessThanEqualAndEndTimeGreaterThanEqual(
                         tutorId, startTime, endTime);
 
         return availabilities.stream()
-                .map(AvailabilityResponseDto::new) // 튜터 정보 포함
+                .map(AvailabilityResponseDto::new)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void bookSlot(Long slotId) {
+        AvailabilitySlot slot = availabilitySlotRepository.findById(slotId)
+                .orElseThrow(AvailabilityException::availabilityNotFound);
+        
+        if (!slot.isAvailable()) {
+            throw AvailabilityException.timeSlotAlreadyExists();
+        }
+        
+        slot.book();
+    }
+
+    @Transactional
+    public void cancelSlot(Long slotId) {
+        AvailabilitySlot slot = availabilitySlotRepository.findById(slotId)
+                .orElseThrow(AvailabilityException::availabilityNotFound);
+        
+        slot.cancel();
     }
 }
