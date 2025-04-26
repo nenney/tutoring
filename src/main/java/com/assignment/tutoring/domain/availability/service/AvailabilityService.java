@@ -33,16 +33,16 @@ public class AvailabilityService {
 
     // 튜터의 가능한 시간대 등록
     @Transactional
-    public AvailabilityResponseDto createAvailability(Long tutorId, AvailabilityRequestDto request) {
+    public AvailabilityResponseDto createAvailability(String userId, AvailabilityRequestDto request) {
+        Tutor tutor = tutorRepository.findByUserId(userId)
+                .orElseThrow(() -> new AvailabilityException(ErrorCode.TUTOR_NOT_FOUND));
+
         // 시간 유효성 검사
         request.validateTime();
 
-        Tutor tutor = tutorRepository.findById(tutorId)
-                .orElseThrow(AvailabilityException::tutorNotFound);
-
         // 기존 가용성과 중복 체크
         List<Availability> existingAvailabilities = availabilityRepository
-                .findTutorAvailabilitiesInRange(tutorId, request.getStartTime(), request.getEndTime());
+                .findTutorAvailabilitiesInRange(tutor.getId(), request.getStartTime(), request.getEndTime());
         
         if (!existingAvailabilities.isEmpty()) {
             throw AvailabilityException.timeSlotAlreadyExists();
@@ -62,11 +62,14 @@ public class AvailabilityService {
 
     // 튜터의 가능한 시간대 삭제
     @Transactional
-    public void deleteAvailability(Long tutorId, Long availabilityId) {
+    public void deleteAvailability(String userId, Long availabilityId) {
+        Tutor tutor = tutorRepository.findByUserId(userId)
+                .orElseThrow(() -> new AvailabilityException(ErrorCode.TUTOR_NOT_FOUND));
+
         Availability availability = availabilityRepository.findById(availabilityId)
                 .orElseThrow(AvailabilityException::availabilityNotFound);
 
-        if (!availability.getTutor().getId().equals(tutorId)) {
+        if (!availability.getTutor().getId().equals(tutor.getId())) {
             throw AvailabilityException.notTutorAvailability();
         }
 
@@ -144,13 +147,12 @@ public class AvailabilityService {
 
     // 특정 튜터의 가능한 시간대 조회 (튜터 정보 포함)
     @Transactional(readOnly = true)
-    public List<AvailabilityResponseDto> getTutorAvailabilities(
-            Long tutorId,
-            LocalDateTime startTime,
-            LocalDateTime endTime
-    ) {
+    public List<AvailabilityResponseDto> getTutorAvailabilities(String userId) {
+        Tutor tutor = tutorRepository.findByUserId(userId)
+                .orElseThrow(() -> new AvailabilityException(ErrorCode.TUTOR_NOT_FOUND));
+
         List<Availability> availabilities = availabilityRepository
-                .findTutorAvailabilitiesInRange(tutorId, startTime, endTime);
+                .findTutorAvailabilitiesInRange(tutor.getId(), LocalDateTime.now(), LocalDateTime.now().plusHours(24));
 
         return availabilities.stream()
                 .map(AvailabilityResponseDto::new)

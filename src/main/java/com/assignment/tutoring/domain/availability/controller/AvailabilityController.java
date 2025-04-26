@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -21,18 +23,17 @@ public class AvailabilityController {
     private final AvailabilityService availabilityService;
 
     // (튜터) 수업 가능한 시간대 등록 API
-    @PostMapping("/tutors/{tutorId}")
-    public ResponseEntity<AvailabilityResponseDto> createAvailability(
-            @PathVariable Long tutorId,
-            @RequestBody AvailabilityRequestDto request) {
-        return ResponseEntity.ok(availabilityService.createAvailability(tutorId, request));
+    @PostMapping("/tutors")
+    public ResponseEntity<AvailabilityResponseDto> createAvailability(@RequestBody AvailabilityRequestDto request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return ResponseEntity.ok(availabilityService.createAvailability(authentication.getName(), request));
     }
 
-    @DeleteMapping("/{availabilityId}/tutors/{tutorId}")
+    @DeleteMapping("/{availabilityId}/tutors")
     public ResponseEntity<Void> deleteAvailability(
-            @PathVariable Long availabilityId,
-            @PathVariable Long tutorId) {
-        availabilityService.deleteAvailability(tutorId, availabilityId);
+            @PathVariable Long availabilityId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        availabilityService.deleteAvailability(authentication.getName(), availabilityId);
         return ResponseEntity.noContent().build();
     }
 
@@ -53,5 +54,11 @@ public class AvailabilityController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
             @RequestParam int durationMinutes) {
         return ResponseEntity.ok(availabilityService.getAvailableTutors(startTime, endTime, durationMinutes));
+    }
+
+    @GetMapping("/tutors")
+    public ResponseEntity<List<AvailabilityResponseDto>> getTutorAvailabilities() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return ResponseEntity.ok(availabilityService.getTutorAvailabilities(authentication.getName()));
     }
 }
